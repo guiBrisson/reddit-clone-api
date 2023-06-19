@@ -6,6 +6,7 @@ import { User } from "src/users/user.entity";
 import { LoginUserDto } from "./dto/login-user.dto";
 import { Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
+import { JwtService } from "@nestjs/jwt";
 
 @Injectable()
 export class AuthService {
@@ -14,6 +15,8 @@ export class AuthService {
 
         @InjectRepository(User)
         private usersRepository: Repository<User>,
+
+        private jwtService: JwtService,
     ) { }
 
 
@@ -21,15 +24,16 @@ export class AuthService {
         const user = await this.usersService.findOneByEmail(loginUserDto.email)
         if (!user) {
             throw new UnauthorizedException('User does not exist');
-        }        
+        }
         const isMatch = await bcrypt.compare(loginUserDto.password, user.password);
         if (!isMatch) {
             throw new HttpException('Wrong credentials', HttpStatus.UNAUTHORIZED);
         }
 
-        const { password, ...result } = user;
-        // TODO: Generate a JWT and return it here instead of the user object
-        return result;
+        const payload = { sub: user.id, username: user.username }
+        const token = await this.jwtService.signAsync(payload)
+
+        return { token };
     }
 
     async create(createUserDto: CreateUserDto): Promise<any> {
@@ -44,8 +48,10 @@ export class AuthService {
         newUser.password = createUserDto.password;
 
         const { password, ...userResponse } = await this.usersRepository.save(newUser);
-        // TODO: Generate a JWT and return it here with the user object
-        return userResponse;
+        const payload = { sub: newUser.id, username: newUser.username }
+        const token = await this.jwtService.signAsync(payload)
+
+        return { token, userResponse };
     }
-    
+
 }
