@@ -1,6 +1,7 @@
 import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, Entity, Generated, PrimaryColumn } from "typeorm";
 import * as bcrypt from 'bcrypt';
 import { IsEmail } from "class-validator";
+import { Role } from "src/users/roles/roles.enum";
 
 @Entity('user')
 export class User {
@@ -20,6 +21,9 @@ export class User {
 
     @CreateDateColumn()
     created_at: Date;
+
+    @Column({ type: 'simple-array' })
+    roles: Role[] = [Role.User]
 
     @BeforeInsert()
     @BeforeUpdate()
